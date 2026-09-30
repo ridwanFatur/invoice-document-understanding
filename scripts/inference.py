@@ -2,7 +2,7 @@ from torch.nn.utils.rnn import pad_sequence
 from transformers.file_utils import ModelOutput
 import re
 
-def token2json(tokens, is_inner_value=False):
+def token2json(tokens, tokenizer, is_inner_value=False):
     output = dict()
 
     while tokens:
@@ -22,7 +22,7 @@ def token2json(tokens, is_inner_value=False):
             if content is not None:
                 content = content.group(1).strip()
                 if r"<s_" in content and r"</s_" in content:  # non-leaf node
-                    value = token2json(content, is_inner_value=True)
+                    value = token2json(content, tokenizer, is_inner_value=True)
                     if value:
                         if len(value) == 1:
                             value = value[0]
@@ -43,17 +43,17 @@ def token2json(tokens, is_inner_value=False):
 
             tokens = tokens[tokens.find(end_token) + len(end_token) :].strip()
             if tokens[:6] == r"<sep/>":  # non-leaf nodes
-                return [output] + token2json(tokens[6:], is_inner_value=True)
+                return [output] + token2json(tokens[6:], tokenizer, is_inner_value=True)
 
     if len(output):
         return [output] if is_inner_value else output
     else:
         return [] if is_inner_value else {"text_sequence": tokens}
 
-def inference(model, tokenizer, image_tensors, prompt_tensors):
+def inference(model, tokenizer, image_tensors, prompt_tensors, max_length):
     last_hidden_state = model.encoder(image_tensors)
     encoder_outputs = ModelOutput(last_hidden_state=last_hidden_state.flatten(1, 2), attentions=None)
-    decoder_output = donut_model.decoder.model.generate(
+    decoder_output = model.decoder.model.generate(
         decoder_input_ids=prompt_tensors,
         encoder_outputs=encoder_outputs,
         max_length=max_length,
@@ -70,5 +70,5 @@ def inference(model, tokenizer, image_tensors, prompt_tensors):
     for seq in tokenizer.batch_decode(decoder_output.sequences):
         seq = seq.replace(tokenizer.eos_token, "").replace(tokenizer.pad_token, "")
         seq = re.sub(r"<.*?>", "", seq, count=1).strip()  # remove first task start token
-        output["predictions"].append(token2json(seq))
+        output["predictions"].append(token2json(seq, tokenizer))
     return output

@@ -2,3 +2,6 @@
 .ipynb_checkpoints/
 *.pyc
 tokenizer/
+.env
+invoice-doc-to-text
+_recents
