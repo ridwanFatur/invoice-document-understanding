@@ -52,8 +52,8 @@ class DonutDataset(Dataset):
         return image_tensor, input_ids, labels
     
 def get_data_loaders(
-    train_loader,
-    test_loader,
+    train_dataset,
+    test_dataset,
     batch_size,
     num_workers=4,
     pin_memory=True,
