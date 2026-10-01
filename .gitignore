@@ -7,3 +7,6 @@ invoice-doc-to-text
 _recents
 wheel/
 pipeline.yaml
+docker-file-pytorch/
+_simple_deploy.ipynb
+test_pipeline.yaml

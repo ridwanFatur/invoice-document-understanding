@@ -1,0 +1,32 @@
+[
+    {
+        "checkpoint": {
+            "path": null,
+            "configs": {
+                "network": {
+                    "input_size": [1280, 960],
+                    "window_size": 10,
+                    "encoder_layer": [1, 1, 1, 1],
+                    "max_position_embeddings": 768,
+                    "decoder_layer": 1,
+                    "vocab_size": 57568,
+                    "pad_token_id": 1
+                },
+                "train": {
+                    "num_epochs": 3,
+                    "epoch": 0,
+                    "batch_size": 4
+                }
+            }
+        },
+        "checkpoint_interval": 20,
+        "seed": 42,
+        "experiment_name": "Donut OCR-Free",
+        "run_name": "invoice-donut-run",
+        "repo_id": null,
+        "num_workers": 2,
+        "pin_memory": true,
+        "shuffle": true,
+        "subset_size": null
+    }
+]
