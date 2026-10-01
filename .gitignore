@@ -5,3 +5,5 @@ tokenizer/
 .env
 invoice-doc-to-text
 _recents
+wheel/
+pipeline.yaml

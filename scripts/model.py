@@ -158,8 +158,9 @@ class BARTDecoder(nn.Module):
         if labels is not None:
             loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
             loss = loss_fct(
-                logits.view(-1, self.model.config.vocab_size), labels.view(-1)
-            )
+				logits.reshape(-1, self.model.config.vocab_size),
+				labels.reshape(-1),
+			)
 
         if not return_dict:
             output = (logits,) + outputs[1:]
@@ -285,4 +286,53 @@ class DonutModel(PreTrainedModel):
 			return_tensors="pt",
 		)["input_ids"].to(self.device)
         result = inference(self, tokenizer, image_tensors, prompt_tensors, max_length)
+        return result
+    
+    @torch.no_grad()
+    def predict_batch(
+        self,
+        image_tensors,
+        tokenizer,
+        prompts,
+        max_length=768,
+    ):
+        from .inference import inference_batch
+
+        if not isinstance(prompts, list):
+            raise TypeError(
+                f"prompts must be list[str], got {type(prompts)}"
+            )
+
+        if image_tensors.ndim != 4:
+            raise ValueError(
+                "image_tensors must have shape [B, C, H, W], "
+                f"got {image_tensors.shape}"
+            )
+
+        batch_size = image_tensors.size(0)
+
+        if len(prompts) != batch_size:
+            raise ValueError(
+                f"Number of prompts ({len(prompts)}) must match "
+                f"batch size ({batch_size})"
+            )
+
+        image_tensors = image_tensors.to(self.device)
+
+        prompt_tensors = tokenizer(
+            prompts,
+            add_special_tokens=False,
+            truncation=True,
+            padding=True,
+            return_tensors="pt",
+        )["input_ids"].to(self.device)
+
+        result = inference_batch(
+            self,
+            tokenizer,
+            image_tensors,
+            prompt_tensors,
+            max_length,
+        )
+
         return result

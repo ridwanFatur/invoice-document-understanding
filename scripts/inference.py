@@ -1,6 +1,7 @@
 from torch.nn.utils.rnn import pad_sequence
 from transformers.file_utils import ModelOutput
 import re
+import torch
 
 def token2json(tokens, tokenizer, is_inner_value=False):
     output = dict()
@@ -50,6 +51,7 @@ def token2json(tokens, tokenizer, is_inner_value=False):
     else:
         return [] if is_inner_value else {"text_sequence": tokens}
 
+@torch.no_grad()
 def inference(model, tokenizer, image_tensors, prompt_tensors, max_length):
     last_hidden_state = model.encoder(image_tensors)
     encoder_outputs = ModelOutput(last_hidden_state=last_hidden_state.flatten(1, 2), attentions=None)
@@ -71,4 +73,49 @@ def inference(model, tokenizer, image_tensors, prompt_tensors, max_length):
         seq = seq.replace(tokenizer.eos_token, "").replace(tokenizer.pad_token, "")
         seq = re.sub(r"<.*?>", "", seq, count=1).strip()  # remove first task start token
         output["predictions"].append(token2json(seq, tokenizer))
+    return output
+
+@torch.no_grad()
+def inference_batch(
+    model,
+    tokenizer,
+    image_tensors,
+    prompt_tensors,
+    max_length,
+):
+    last_hidden_state = model.encoder(image_tensors)
+
+    encoder_outputs = ModelOutput(
+        last_hidden_state=last_hidden_state.flatten(1, 2),
+        attentions=None,
+    )
+
+    decoder_output = model.decoder.model.generate(
+        decoder_input_ids=prompt_tensors,
+        encoder_outputs=encoder_outputs,
+        max_length=max_length,
+        early_stopping=True,
+        pad_token_id=tokenizer.pad_token_id,
+        eos_token_id=tokenizer.eos_token_id,
+        use_cache=True,
+        num_beams=1,
+        bad_words_ids=[[tokenizer.unk_token_id]],
+        return_dict_in_generate=True,
+        output_attentions=False,
+    )
+
+    output = {"predictions": list()}
+
+    for seq in tokenizer.batch_decode(
+        decoder_output.sequences,
+        skip_special_tokens=False,
+    ):
+        seq = seq.replace(tokenizer.eos_token, "")
+        seq = seq.replace(tokenizer.pad_token, "")
+        seq = re.sub(r"<.*?>", "", seq, count=1).strip()
+
+        output["predictions"].append(
+            token2json(seq, tokenizer)
+        )
+
     return output
