@@ -60,6 +60,14 @@ def evaluate(model, test_loader, device, tokenizer):
             loss = decoder_outputs["loss"]
             losses.append(loss.item())
 
+            labels_for_decode = labels.clone()
+            labels_for_decode[labels_for_decode == -100] = tokenizer.pad_token_id
+
+            ground_truth = tokenizer.batch_decode(
+                labels_for_decode,
+                skip_special_tokens=False,
+            )
+
             prompts = ["<s_cord-v2>"] * image_tensors.size(0)
 
             result = model.predict_batch(
@@ -68,7 +76,13 @@ def evaluate(model, test_loader, device, tokenizer):
                 prompts=prompts,
             )
 
-            predicted_results.extend(result["predictions"])
+            predictions = result["predictions"]
 
-    return losses, predicted_results  
+            for prediction, gt in zip(predictions, ground_truth):
+                predicted_results.append({
+                    "prediction": prediction,
+                    "ground_truth": gt,
+                })
+
+    return losses, predicted_results
     
