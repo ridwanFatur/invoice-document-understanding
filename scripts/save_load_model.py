@@ -3,6 +3,7 @@ import subprocess
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModel
 from .model import DonutModel, DonutConfig
+from google.cloud import storage
 
 def save_model(model, optimizer, configs, path):
     checkpoint = {
@@ -33,8 +34,17 @@ def create_model(network_config):
 def load_checkpoint(path, device):  
     if str(path).startswith("gs://"):
         print("Using Dictionary Input and GCS Checkpoint")
-        local_checkpoint_path = Path("tensors") / Path(path).name
-        subprocess.run(["gcloud", "storage", "cp", path, local_checkpoint_path],check=True,) 
+
+        bucket_name, blob_name = str(path)[5:].split("/", 1)
+
+        local_checkpoint_path = Path("tensors") / Path(blob_name).name
+        local_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+
+        blob.download_to_filename(str(local_checkpoint_path))
     else:
         print("Using Dictionary Input and Local Checkpoint")
         local_checkpoint_path = Path(path)  

@@ -10,3 +10,5 @@ pipeline.yaml
 docker-file-pytorch/
 _simple_deploy.ipynb
 test_pipeline.yaml
+_load_pretrained.ipynb
+checkpoints/
