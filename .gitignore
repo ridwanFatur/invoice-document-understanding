@@ -12,3 +12,5 @@ _simple_deploy.ipynb
 test_pipeline.yaml
 _load_pretrained.ipynb
 checkpoints/
+tensors/
+_check_training.ipynb
